@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>WebSocket Test - Enhanced Echo Server</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .container { max-width: 800px; margin: 0 auto; }
+      .button-group { margin: 10px 0; }
+      button { margin: 5px; padding: 8px 16px; }
+      .log { background: #f5f5f5; border: 1px solid #ddd; padding: 10px; height: 300px; overflow-y: auto; margin-top: 20px; }
+      .message { margin: 5px 0; }
+      .sent { color: blue; }
+      .received { color: green; }
+      .error { color: red; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Enhanced WebSocket Echo Server Test</h1>
+      
+      <div class="button-group">
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+        <span id="status">Disconnected</span>
+      </div>
+
+      <div class="button-group">
+        <h3>Basic Echo</h3>
+        <button onclick="sendMessage('Hello WebSocket!')">Send Basic Message</button>
+        <input type="text" id="customMessage" placeholder="Enter custom message" value="Test message">
+        <button onclick="sendCustomMessage()">Send Custom</button>
+      </div>
+
+      <div class="button-group">
+        <h3>Part 1: Uppercase Echo</h3>
+        <button onclick="sendUpper('hello world')">UPPER: hello world</button>
+        <button onclick="sendUpper('test message')">UPPER: test message</button>
+      </div>
+
+      <div class="button-group">
+        <h3>Part 2: Reverse Echo</h3>
+        <button onclick="sendReverse('hello')">REVERSE: hello</button>
+        <button onclick="sendReverse('WebSocket')">REVERSE: WebSocket</button>
+        <button onclick="sendReverse('🚀 Hello 🌍')">REVERSE: 🚀 Hello 🌍</button>
+      </div>
+
+      <div class="button-group">
+        <h3>Part 3: Message Counter</h3>
+        <button onclick="testCounter()">Test Counter (Send 5 messages)</button>
+      </div>
+
+      <div class="button-group">
+        <h3>Part 4: JSON Calculator</h3>
+        <button onclick="sendJSON('add', 5, 3)">Add: 5 + 3</button>
+        <button onclick="sendJSON('subtract', 10, 4)">Subtract: 10 - 4</button>
+        <button onclick="sendJSON('multiply', 6, 7)">Multiply: 6 × 7</button>
+        <button onclick="sendJSON('divide', 15, 3)">Divide: 15 ÷ 3</button>
+        <button onclick="sendJSON('divide', 5, 0)">Divide by Zero</button>
+        <button onclick="sendJSON('unknown', 1, 1)">Unknown Command</button>
+      </div>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <script>
+      let socket = null;
+
+      function logMessage(message, type = 'info') {
+        const log = document.getElementById('log');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        log.appendChild(messageDiv);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function connect() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          logMessage('Already connected', 'info');
+          return;
+        }
+
+        socket = new WebSocket("ws://localhost:4000/ws");
+        
+        socket.onopen = () => {
+          document.getElementById('status').textContent = 'Connected';
+          document.getElementById('status').style.color = 'green';
+          logMessage('Connected to WebSocket server', 'success');
+        };
+
+        socket.onmessage = (event) => {
+          logMessage(`Received: ${event.data}`, 'received');
+        };
+
+        socket.onerror = (error) => {
+          logMessage(`Error: ${error}`, 'error');
+        };
+
+        socket.onclose = (event) => {
+          document.getElementById('status').textContent = 'Disconnected';
+          document.getElementById('status').style.color = 'red';
+          logMessage(`Connection closed: ${event.code} - ${event.reason}`, 'info');
+        };
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.close();
+          socket = null;
+        }
+      }
+
+      function sendMessage(message) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(message);
+          logMessage(`Sent: ${message}`, 'sent');
+        } else {
+          logMessage('WebSocket is not connected', 'error');
+        }
+      }
+
+      function sendCustomMessage() {
+        const input = document.getElementById('customMessage');
+        sendMessage(input.value);
+      }
+
+      // Part 1: Uppercase functions
+      function sendUpper(text) {
+        sendMessage(`UPPER:${text}`);
+      }
+
+      // Part 2: Reverse functions
+      function sendReverse(text) {
+        sendMessage(`REVERSE:${text}`);
+      }
+
+      // Part 3: Counter test
+      function testCounter() {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+          logMessage('Please connect first', 'error');
+          return;
+        }
+
+        for (let i = 1; i <= 5; i++) {
+          setTimeout(() => {
+            sendMessage(`Counter test message ${i}`);
+          }, i * 100);
+        }
+      }
+
+      // Part 4: JSON functions
+      function sendJSON(command, a, b) {
+        const jsonCommand = JSON.stringify({ command, a, b });
+        sendMessage(jsonCommand);
+      }
+
+      // Auto-connect when page loads
+      window.addEventListener('load', connect);
+    </script>
+  </body>
+</html>

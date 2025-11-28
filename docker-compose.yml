@@ -1,0 +1,32 @@
+services:
+  go:
+    image: golang:1.25.0
+    container_name: ws
+    working_dir: /app
+    volumes:
+      - .:/app
+    # Force vendor usage explicitly in the command
+    command: >
+      sh -c "
+        echo 'Using vendor directory for dependencies...' &&
+        ls -la vendor/ &&
+        go run -mod=vendor ./cmd/web
+      "
+    ports:
+      - "4000:4000"
+    networks:
+      - backend
+
+  apache:
+    image: httpd:latest
+    container_name: apache-server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./web:/usr/local/apache2/htdocs
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
